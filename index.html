@@ -1,0 +1,968 @@
+ body {
+        font-family: 'Noto Sans JP', sans-serif;
+        background-color: #f0f7ff;
+    }
+    
+    .task-item {
+        transition: all 0.3s ease;
+    }
+    
+    .task-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .completed {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+    
+    .priority-high {
+        border-left: 4px solid #ef4444;
+    }
+    
+    .priority-medium {
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .priority-low {
+        border-left: 4px solid #10b981;
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .notification {
+        animation: slideIn 0.3s ease-out forwards, fadeOut 0.5s ease-in forwards 5s;
+        transform: translateX(100%);
+    }
+    
+    @keyframes slideIn {
+        to { transform: translateX(0); }
+    }
+    
+    @keyframes fadeOut {
+        to { opacity: 0; }
+    }
+    
+    .progress-bar {
+        transition: width 0.5s ease;
+    }
+    
+    .btn-download {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+        70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+</style>
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    <header class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold text-blue-800">動画編集チームタスク管理</h1>
+            <div class="flex items-center space-x-2">
+                <button id="download-app" class="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 flex items-center space-x-1 btn-download">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    <span>アプリをダウンロード</span>
+                </button>
+                <div id="current-user" class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium"></div>
+                <button id="user-settings" class="bg-blue-100 text-blue-800 p-2 rounded-full hover:bg-blue-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="flex justify-between items-center">
+            <p class="text-blue-600" id="current-date"></p>
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-blue-700">チーム進捗:</span>
+                <div class="w-48 h-3 bg-blue-100 rounded-full overflow-hidden">
+                    <div id="team-progress" class="h-full bg-blue-600 progress-bar" style="width: 0%"></div>
+                </div>
+                <span id="progress-percentage" class="text-sm text-blue-700">0%</span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold text-blue-700 mb-4">新しいタスクを追加</h2>
+        <form id="task-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="col-span-1 md:col-span-2">
+                    <label for="task-title" class="block text-sm font-medium text-blue-700 mb-1">タスク名</label>
+                    <input type="text" id="task-title" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="タスク名を入力" required>
+                </div>
+                <div>
+                    <label for="task-assignee" class="block text-sm font-medium text-blue-700 mb-1">担当者</label>
+                    <select id="task-assignee" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- ユーザーはJSで動的に追加されます -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="task-priority" class="block text-sm font-medium text-blue-700 mb-1">優先度</label>
+                    <select id="task-priority" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="low">低</option>
+                        <option value="medium" selected>中</option>
+                        <option value="high">高</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="task-time" class="block text-sm font-medium text-blue-700 mb-1">予定時間</label>
+                    <input type="time" id="task-time" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="task-category" class="block text-sm font-medium text-blue-700 mb-1">カテゴリ</label>
+                    <select id="task-category" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="編集">編集</option>
+                        <option value="撮影">撮影</option>
+                        <option value="音声">音声</option>
+                        <option value="企画">企画</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="task-deadline" class="block text-sm font-medium text-blue-700 mb-1">期限</label>
+                    <input type="date" id="task-deadline" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div>
+                <label for="task-description" class="block text-sm font-medium text-blue-700 mb-1">詳細（オプション）</label>
+                <textarea id="task-description" rows="2" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="タスクの詳細を入力"></textarea>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    追加する
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-blue-700">チームメンバー進捗</h2>
+            <button id="refresh-data" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-md hover:bg-blue-200 flex items-center space-x-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>更新</span>
+            </button>
+        </div>
+        <div id="team-members-progress" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- チームメンバーの進捗はJSで動的に追加されます -->
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 未完了タスク -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-blue-700">未完了タスク</h2>
+                <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full" id="pending-count">0</span>
+            </div>
+            <div id="pending-tasks" class="space-y-3">
+                <!-- タスクはJSで動的に追加されます -->
+            </div>
+        </div>
+        
+        <!-- 完了タスク -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-blue-700">完了タスク</h2>
+                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full" id="completed-count">0</span>
+            </div>
+            <div id="completed-tasks" class="space-y-3">
+                <!-- タスクはJSで動的に追加されます -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- タスク詳細モーダル -->
+    <div id="task-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-blue-800" id="modal-title"></h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <span class="text-sm font-medium text-blue-700">担当者:</span>
+                    <span id="modal-assignee" class="ml-2"></span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-700">カテゴリ:</span>
+                    <span id="modal-category" class="ml-2"></span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-700">予定時間:</span>
+                    <span id="modal-time" class="ml-2"></span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-700">期限:</span>
+                    <span id="modal-deadline" class="ml-2"></span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-700">進捗状況:</span>
+                    <div class="flex items-center space-x-2 mt-1">
+                        <select id="modal-progress" class="px-2 py-1 border border-blue-300 rounded-md text-sm">
+                            <option value="0">0%</option>
+                            <option value="25">25%</option>
+                            <option value="50">50%</option>
+                            <option value="75">75%</option>
+                            <option value="100">100%</option>
+                        </select>
+                        <button id="update-progress" class="bg-blue-100 text-blue-800 px-2 py-1 text-sm rounded hover:bg-blue-200">更新</button>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-blue-700">詳細:</span>
+                    <p id="modal-description" class="mt-1 text-gray-700"></p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="modal-delete" class="px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors">
+                    削除
+                </button>
+                <button id="modal-toggle-status" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                    完了にする
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ユーザー設定モーダル -->
+    <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-blue-800">ユーザー設定</h3>
+                <button id="close-user-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="current-username" class="block text-sm font-medium text-blue-700 mb-1">現在のユーザー</label>
+                    <select id="current-username" class="w-full px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- ユーザーはJSで動的に追加されます -->
+                    </select>
+                </div>
+                <div>
+                    <label for="new-username" class="block text-sm font-medium text-blue-700 mb-1">新しいユーザーを追加</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="new-username" class="flex-1 px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ユーザー名">
+                        <button id="add-user" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">追加</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700 mb-1">通知設定</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="notify-task-assigned" class="mr-2" checked>
+                            <label for="notify-task-assigned" class="text-sm text-gray-700">自分に割り当てられたタスク</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="notify-task-completed" class="mr-2" checked>
+                            <label for="notify-task-completed" class="text-sm text-gray-700">タスク完了</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="notify-progress-update" class="mr-2" checked>
+                            <label for="notify-progress-update" class="text-sm text-gray-700">進捗状況の更新</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="save-user-settings" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 共有リンクモーダル -->
+    <div id="share-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-blue-800">プロジェクトを共有</h3>
+                <button id="close-share-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-gray-700">以下のリンクを共有して、チームメンバーをプロジェクトに招待できます：</p>
+                <div class="flex space-x-2">
+                    <input type="text" id="share-link" class="flex-1 px-4 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" readonly value="https://example.com/share/project123">
+                    <button id="copy-link" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">コピー</button>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-md">
+                    <p class="text-sm text-blue-800">※このデモでは実際の共有機能は実装されていません。実際のアプリケーションではバックエンド連携が必要です。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ダウンロードモーダル -->
+    <div id="download-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-blue-800">アプリをダウンロード</h3>
+                <button id="close-download-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-gray-700">このアプリをHTMLファイルとしてダウンロードして、オフラインでも使用できます。</p>
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="font-medium text-blue-800 mb-2">ダウンロード後の使用方法</h4>
+                    <ol class="text-sm text-blue-800 space-y-1 list-decimal pl-4">
+                        <li>ダウンロードしたHTMLファイルをお好きな場所に保存します</li>
+                        <li>ブラウザで保存したファイルを開くだけで使用できます</li>
+                        <li>データはブラウザのローカルストレージに保存されます</li>
+                    </ol>
+                </div>
+                <div class="flex justify-center">
+                    <a id="download-link" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2" download="動画編集チームタスク管理.html" href="#">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        <span>HTMLファイルをダウンロード</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 現在の日付を表示
+        const dateElement = document.getElementById('current-date');
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        dateElement.textContent = now.toLocaleDateString('ja-JP', options);
+        
+        // ユーザーデータ
+        let users = JSON.parse(localStorage.getItem('videoEditingUsers')) || [
+            { id: 1, name: '山田太郎' },
+            { id: 2, name: '佐藤花子' },
+            { id: 3, name: '鈴木一郎' },
+            { id: 4, name: '高橋めぐみ' }
+        ];
+        
+        // 現在のユーザー
+        let currentUser = JSON.parse(localStorage.getItem('currentVideoEditingUser')) || users[0];
+        
+        // 通知設定
+        let notificationSettings = JSON.parse(localStorage.getItem('videoEditingNotifications')) || {
+            taskAssigned: true,
+            taskCompleted: true,
+            progressUpdate: true
+        };
+        
+        // タスクデータを保存する配列
+        let tasks = JSON.parse(localStorage.getItem('videoEditingTasks')) || [];
+        let currentTaskId = null;
+        
+        // ユーザー設定を保存
+        function saveUserSettings() {
+            localStorage.setItem('videoEditingUsers', JSON.stringify(users));
+            localStorage.setItem('currentVideoEditingUser', JSON.stringify(currentUser));
+            localStorage.setItem('videoEditingNotifications', JSON.stringify(notificationSettings));
+        }
+        
+        // ユーザーリストを更新
+        function updateUserLists() {
+            const assigneeSelect = document.getElementById('task-assignee');
+            const usernameSelect = document.getElementById('current-username');
+            
+            // リストをクリア
+            assigneeSelect.innerHTML = '';
+            usernameSelect.innerHTML = '';
+            
+            // ユーザーを追加
+            users.forEach(user => {
+                const assigneeOption = document.createElement('option');
+                assigneeOption.value = user.name;
+                assigneeOption.textContent = user.name;
+                assigneeSelect.appendChild(assigneeOption);
+                
+                const usernameOption = document.createElement('option');
+                usernameOption.value = user.name;
+                usernameOption.textContent = user.name;
+                if (user.name === currentUser.name) {
+                    usernameOption.selected = true;
+                }
+                usernameSelect.appendChild(usernameOption);
+            });
+            
+            // 現在のユーザーを表示
+            document.getElementById('current-user').textContent = currentUser.name;
+        }
+        
+        // タスクフォームの送信処理
+        const taskForm = document.getElementById('task-form');
+        taskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('task-title').value;
+            const assignee = document.getElementById('task-assignee').value;
+            const priority = document.getElementById('task-priority').value;
+            const time = document.getElementById('task-time').value;
+            const category = document.getElementById('task-category').value;
+            const deadline = document.getElementById('task-deadline').value;
+            const description = document.getElementById('task-description').value;
+            
+            const newTask = {
+                id: Date.now(),
+                title,
+                assignee,
+                priority,
+                time,
+                category,
+                deadline,
+                description,
+                completed: false,
+                progress: 0,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser.name
+            };
+            
+            tasks.push(newTask);
+            saveTasks();
+            renderTasks();
+            updateTeamProgress();
+            
+            // 通知を表示
+            if (notificationSettings.taskAssigned && assignee === currentUser.name) {
+                showNotification(`新しいタスク「${title}」があなたに割り当てられました`, 'info');
+            } else {
+                showNotification(`新しいタスク「${title}」が追加されました`, 'success');
+            }
+            
+            // フォームをリセット
+            taskForm.reset();
+        });
+        
+        // タスクの保存
+        function saveTasks() {
+            localStorage.setItem('videoEditingTasks', JSON.stringify(tasks));
+        }
+        
+        // タスクの表示
+        function renderTasks() {
+            const pendingTasksContainer = document.getElementById('pending-tasks');
+            const completedTasksContainer = document.getElementById('completed-tasks');
+            
+            // コンテナをクリア
+            pendingTasksContainer.innerHTML = '';
+            completedTasksContainer.innerHTML = '';
+            
+            // 未完了タスクと完了タスクを分ける
+            const pendingTasks = tasks.filter(task => !task.completed);
+            const completedTasks = tasks.filter(task => task.completed);
+            
+            // カウンターを更新
+            document.getElementById('pending-count').textContent = pendingTasks.length;
+            document.getElementById('completed-count').textContent = completedTasks.length;
+            
+            // 未完了タスクを表示
+            if (pendingTasks.length === 0) {
+                pendingTasksContainer.innerHTML = '<p class="text-gray-500 text-center py-4">未完了のタスクはありません</p>';
+            } else {
+                pendingTasks.forEach(task => {
+                    const taskElement = createTaskElement(task);
+                    pendingTasksContainer.appendChild(taskElement);
+                });
+            }
+            
+            // 完了タスクを表示
+            if (completedTasks.length === 0) {
+                completedTasksContainer.innerHTML = '<p class="text-gray-500 text-center py-4">完了したタスクはありません</p>';
+            } else {
+                completedTasks.forEach(task => {
+                    const taskElement = createTaskElement(task);
+                    completedTasksContainer.appendChild(taskElement);
+                });
+            }
+        }
+        
+        // タスク要素の作成
+        function createTaskElement(task) {
+            const taskElement = document.createElement('div');
+            taskElement.className = `task-item p-4 bg-blue-50 rounded-md shadow-sm fade-in priority-${task.priority} ${task.completed ? 'completed' : ''}`;
+            
+            const priorityLabel = {
+                'high': '高',
+                'medium': '中',
+                'low': '低'
+            };
+            
+            const priorityColor = {
+                'high': 'bg-red-100 text-red-800',
+                'medium': 'bg-yellow-100 text-yellow-800',
+                'low': 'bg-green-100 text-green-800'
+            };
+            
+            // 期限が近い場合の警告表示
+            let deadlineWarning = '';
+            if (task.deadline && !task.completed) {
+                const deadlineDate = new Date(task.deadline);
+                const today = new Date();
+                const diffTime = deadlineDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays < 0) {
+                    deadlineWarning = `<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">期限超過</span>`;
+                } else if (diffDays <= 1) {
+                    deadlineWarning = `<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">今日まで</span>`;
+                } else if (diffDays <= 3) {
+                    deadlineWarning = `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">あと${diffDays}日</span>`;
+                }
+            }
+            
+            // 進捗バーの表示
+            const progressBar = task.completed ? 
+                `<div class="w-full h-1 bg-green-500 rounded-full mt-2"></div>` : 
+                `<div class="w-full h-1 bg-gray-200 rounded-full mt-2">
+                    <div class="h-full bg-blue-500 rounded-full" style="width: ${task.progress}%"></div>
+                </div>`;
+            
+            taskElement.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex items-start space-x-2">
+                        <input type="checkbox" class="task-checkbox mt-1" data-id="${task.id}" ${task.completed ? 'checked' : ''}>
+                        <div class="w-full">
+                            <h3 class="font-medium text-blue-900">${task.title}</h3>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                ${task.assignee ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">${task.assignee}</span>` : ''}
+                                <span class="text-xs ${priorityColor[task.priority]} px-2 py-0.5 rounded-full">優先度: ${priorityLabel[task.priority]}</span>
+                                ${task.category ? `<span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">${task.category}</span>` : ''}
+                                ${task.deadline ? `<span class="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">${task.deadline}</span>` : ''}
+                                ${deadlineWarning}
+                            </div>
+                            ${progressBar}
+                        </div>
+                    </div>
+                    <button class="task-details text-blue-600 hover:text-blue-800" data-id="${task.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            // チェックボックスのイベントリスナー
+            const checkbox = taskElement.querySelector('.task-checkbox');
+            checkbox.addEventListener('change', function() {
+                toggleTaskStatus(task.id);
+            });
+            
+            // 詳細ボタンのイベントリスナー
+            const detailsButton = taskElement.querySelector('.task-details');
+            detailsButton.addEventListener('click', function() {
+                showTaskDetails(task.id);
+            });
+            
+            return taskElement;
+        }
+        
+        // タスクのステータスを切り替える
+        function toggleTaskStatus(taskId) {
+            const taskIndex = tasks.findIndex(task => task.id === taskId);
+            if (taskIndex !== -1) {
+                const task = tasks[taskIndex];
+                const previousStatus = task.completed;
+                task.completed = !task.completed;
+                
+                // 完了にした場合は進捗を100%に
+                if (task.completed) {
+                    task.progress = 100;
+                }
+                
+                saveTasks();
+                renderTasks();
+                updateTeamProgress();
+                
+                // 通知を表示
+                if (notificationSettings.taskCompleted && task.completed !== previousStatus) {
+                    if (task.completed) {
+                        showNotification(`タスク「${task.title}」が完了しました`, 'success');
+                    } else {
+                        showNotification(`タスク「${task.title}」が未完了に戻されました`, 'info');
+                    }
+                }
+            }
+        }
+        
+        // タスク詳細モーダルを表示
+        function showTaskDetails(taskId) {
+            const task = tasks.find(task => task.id === taskId);
+            if (!task) return;
+            
+            currentTaskId = taskId;
+            
+            document.getElementById('modal-title').textContent = task.title;
+            document.getElementById('modal-assignee').textContent = task.assignee || '未設定';
+            document.getElementById('modal-category').textContent = task.category || '未設定';
+            document.getElementById('modal-time').textContent = task.time || '未設定';
+            document.getElementById('modal-deadline').textContent = task.deadline || '未設定';
+            document.getElementById('modal-description').textContent = task.description || '詳細はありません';
+            
+            // 進捗状況の設定
+            const progressSelect = document.getElementById('modal-progress');
+            for (let i = 0; i < progressSelect.options.length; i++) {
+                if (parseInt(progressSelect.options[i].value) === task.progress) {
+                    progressSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            const toggleButton = document.getElementById('modal-toggle-status');
+            toggleButton.textContent = task.completed ? '未完了に戻す' : '完了にする';
+            toggleButton.className = task.completed 
+                ? 'px-4 py-2 bg-yellow-600 text-white font-medium rounded-md hover:bg-yellow-700 transition-colors'
+                : 'px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors';
+            
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+        
+        // モーダルを閉じる
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('task-modal').classList.add('hidden');
+        });
+        
+        // モーダル外クリックで閉じる
+        document.getElementById('task-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+        
+        // モーダルからタスクのステータスを切り替える
+        document.getElementById('modal-toggle-status').addEventListener('click', function() {
+            if (currentTaskId) {
+                toggleTaskStatus(currentTaskId);
+                document.getElementById('task-modal').classList.add('hidden');
+            }
+        });
+        
+        // モーダルからタスクを削除
+        document.getElementById('modal-delete').addEventListener('click', function() {
+            if (currentTaskId) {
+                deleteTask(currentTaskId);
+                document.getElementById('task-modal').classList.add('hidden');
+            }
+        });
+        
+        // タスクの進捗を更新
+        document.getElementById('update-progress').addEventListener('click', function() {
+            if (currentTaskId) {
+                const taskIndex = tasks.findIndex(task => task.id === currentTaskId);
+                if (taskIndex !== -1) {
+                    const progress = parseInt(document.getElementById('modal-progress').value);
+                    const previousProgress = tasks[taskIndex].progress;
+                    tasks[taskIndex].progress = progress;
+                    
+                    // 進捗が100%なら完了にする
+                    if (progress === 100) {
+                        tasks[taskIndex].completed = true;
+                    }
+                    
+                    saveTasks();
+                    renderTasks();
+                    updateTeamProgress();
+                    
+                    // 通知を表示
+                    if (notificationSettings.progressUpdate && progress !== previousProgress) {
+                        showNotification(`タスク「${tasks[taskIndex].title}」の進捗が${progress}%に更新されました`, 'info');
+                    }
+                    
+                    document.getElementById('task-modal').classList.add('hidden');
+                }
+            }
+        });
+        
+        // タスクを削除
+        function deleteTask(taskId) {
+            const taskIndex = tasks.findIndex(task => task.id === taskId);
+            if (taskIndex !== -1) {
+                const taskTitle = tasks[taskIndex].title;
+                tasks = tasks.filter(task => task.id !== taskId);
+                saveTasks();
+                renderTasks();
+                updateTeamProgress();
+                
+                // 通知を表示
+                showNotification(`タスク「${taskTitle}」が削除されました`, 'warning');
+            }
+        }
+        
+        // チーム全体の進捗を更新
+        function updateTeamProgress() {
+            if (tasks.length === 0) {
+                document.getElementById('team-progress').style.width = '0%';
+                document.getElementById('progress-percentage').textContent = '0%';
+                return;
+            }
+            
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(task => task.completed).length;
+            const inProgressTasks = tasks.filter(task => !task.completed && task.progress > 0);
+            
+            let totalProgress = completedTasks * 100;
+            inProgressTasks.forEach(task => {
+                totalProgress += task.progress;
+            });
+            
+            const progressPercentage = Math.round(totalProgress / (totalTasks * 100) * 100);
+            document.getElementById('team-progress').style.width = `${progressPercentage}%`;
+            document.getElementById('progress-percentage').textContent = `${progressPercentage}%`;
+            
+            // チームメンバーごとの進捗を更新
+            updateTeamMembersProgress();
+        }
+        
+        // チームメンバーごとの進捗を更新
+        function updateTeamMembersProgress() {
+            const teamMembersContainer = document.getElementById('team-members-progress');
+            teamMembersContainer.innerHTML = '';
+            
+            // ユーザーごとのタスク集計
+            const userStats = {};
+            users.forEach(user => {
+                userStats[user.name] = {
+                    total: 0,
+                    completed: 0,
+                    inProgress: 0
+                };
+            });
+            
+            // タスクを集計
+            tasks.forEach(task => {
+                if (task.assignee && userStats[task.assignee]) {
+                    userStats[task.assignee].total++;
+                    if (task.completed) {
+                        userStats[task.assignee].completed++;
+                    } else if (task.progress > 0) {
+                        userStats[task.assignee].inProgress++;
+                    }
+                }
+            });
+            
+            // ユーザーごとの進捗を表示
+            users.forEach(user => {
+                const stats = userStats[user.name];
+                const progressPercentage = stats.total > 0 
+                    ? Math.round((stats.completed / stats.total) * 100) 
+                    : 0;
+                
+                const memberElement = document.createElement('div');
+                memberElement.className = 'bg-white p-4 rounded-lg shadow';
+                memberElement.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-medium text-blue-800">${user.name}</h3>
+                        <span class="text-sm text-blue-700">${progressPercentage}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-600" style="width: ${progressPercentage}%"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs text-gray-600">
+                        <span>タスク: ${stats.total}</span>
+                        <span>完了: ${stats.completed}</span>
+                        <span>進行中: ${stats.inProgress}</span>
+                    </div>
+                `;
+                
+                teamMembersContainer.appendChild(memberElement);
+            });
+        }
+        
+        // 通知を表示
+        function showNotification(message, type = 'info') {
+            const notificationArea = document.getElementById('notification-area');
+            const notification = document.createElement('div');
+            
+            const typeClasses = {
+                'success': 'bg-green-100 border-green-500 text-green-800',
+                'warning': 'bg-yellow-100 border-yellow-500 text-yellow-800',
+                'error': 'bg-red-100 border-red-500 text-red-800',
+                'info': 'bg-blue-100 border-blue-500 text-blue-800'
+            };
+            
+            notification.className = `notification p-3 rounded-md border-l-4 ${typeClasses[type] || typeClasses.info}`;
+            notification.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <p>${message}</p>
+                    <button class="close-notification text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            notificationArea.appendChild(notification);
+            
+            // 閉じるボタンのイベントリスナー
+            notification.querySelector('.close-notification').addEventListener('click', function() {
+                notification.remove();
+            });
+            
+            // 一定時間後に自動的に消える
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // ユーザー設定ボタンのイベントリスナー
+        document.getElementById('user-settings').addEventListener('click', function() {
+            document.getElementById('user-modal').classList.remove('hidden');
+            updateUserLists();
+            
+            // 通知設定の更新
+            document.getElementById('notify-task-assigned').checked = notificationSettings.taskAssigned;
+            document.getElementById('notify-task-completed').checked = notificationSettings.taskCompleted;
+            document.getElementById('notify-progress-update').checked = notificationSettings.progressUpdate;
+        });
+        
+        // ユーザー設定モーダルを閉じる
+        document.getElementById('close-user-modal').addEventListener('click', function() {
+            document.getElementById('user-modal').classList.add('hidden');
+        });
+        
+        // ユーザー設定モーダル外クリックで閉じる
+        document.getElementById('user-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+        
+        // 新しいユーザーを追加
+        document.getElementById('add-user').addEventListener('click', function() {
+            const newUsername = document.getElementById('new-username').value.trim();
+            if (newUsername && !users.some(user => user.name === newUsername)) {
+                users.push({
+                    id: Date.now(),
+                    name: newUsername
+                });
+                saveUserSettings();
+                updateUserLists();
+                document.getElementById('new-username').value = '';
+                showNotification(`ユーザー「${newUsername}」が追加されました`, 'success');
+            } else if (users.some(user => user.name === newUsername)) {
+                showNotification('そのユーザー名は既に存在します', 'warning');
+            }
+        });
+        
+        // ユーザー設定を保存
+        document.getElementById('save-user-settings').addEventListener('click', function() {
+            const selectedUsername = document.getElementById('current-username').value;
+            const selectedUser = users.find(user => user.name === selectedUsername);
+            
+            if (selectedUser) {
+                currentUser = selectedUser;
+                
+                // 通知設定を更新
+                notificationSettings.taskAssigned = document.getElementById('notify-task-assigned').checked;
+                notificationSettings.taskCompleted = document.getElementById('notify-task-completed').checked;
+                notificationSettings.progressUpdate = document.getElementById('notify-progress-update').checked;
+                
+                saveUserSettings();
+                document.getElementById('current-user').textContent = currentUser.name;
+                document.getElementById('user-modal').classList.add('hidden');
+                
+                showNotification('設定が保存されました', 'success');
+            }
+        });
+        
+        // データ更新ボタン
+        document.getElementById('refresh-data').addEventListener('click', function() {
+            renderTasks();
+            updateTeamProgress();
+            showNotification('データが更新されました', 'info');
+        });
+        
+        // アプリをダウンロードボタン
+        document.getElementById('download-app').addEventListener('click', function() {
+            prepareDownload();
+            document.getElementById('download-modal').classList.remove('hidden');
+        });
+        
+        // ダウンロードモーダルを閉じる
+        document.getElementById('close-download-modal').addEventListener('click', function() {
+            document.getElementById('download-modal').classList.add('hidden');
+        });
+        
+        // ダウンロードモーダル外クリックで閉じる
+        document.getElementById('download-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+        
+        // アプリのダウンロード準備
+        function prepareDownload() {
+            // 現在のHTMLを取得
+            const htmlContent = document.documentElement.outerHTML;
+            
+            // Blobオブジェクトを作成
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            
+            // ダウンロードリンクを設定
+            const downloadLink = document.getElementById('download-link');
+            downloadLink.href = URL.createObjectURL(blob);
+            
+            // 通知を表示
+            showNotification('アプリのダウンロードの準備ができました', 'success');
+        }
+        
+        // 初期表示
+        updateUserLists();
+        renderTasks();
+        updateTeamProgress();
+        
+        // デモ用：共有リンクをコピー
+        document.getElementById('copy-link').addEventListener('click', function() {
+            const shareLink = document.getElementById('share-link');
+            shareLink.select();
+            document.execCommand('copy');
+            showNotification('共有リンクがコピーされました', 'success');
+        });
+        
+        // デモ用：期限切れタスクの通知をシミュレート
+        setTimeout(() => {
+            const pendingTasks = tasks.filter(task => !task.completed);
+            if (pendingTasks.length > 0) {
+                const randomTask = pendingTasks[Math.floor(Math.random() * pendingTasks.length)];
+                showNotification(`リマインダー: タスク「${randomTask.title}」の期限が近づいています`, 'warning');
+            }
+        }, 10000);
+    });
+</script>
